@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Glow Pod</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; width: 100%; }
+body {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background 2.2s ease;
+  background: #0e0c10;
+}
+#page-wash { position: fixed; inset: 0; z-index: 0; pointer-events: none; transition: background 2.2s ease; }
+#shell { width: min(500px, 96vw); position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 1.75rem 1.75rem 1.5rem; }
+
+#top-controls { position: absolute; top: 14px; right: 14px; z-index: 10; display: flex; gap: 7px; align-items: center; }
+.top-btn { background: none; border-radius: 20px; cursor: pointer; padding: 5px 12px; font-family: inherit; font-size: 10px; letter-spacing: 0.5px; transition: background 0.2s, color 0.2s, border-color 0.2s; white-space: nowrap; }
+.dark  .top-btn    { border: 0.5px solid rgba(255,255,255,0.18); color: rgba(255,255,255,0.5); }
+.light .top-btn    { border: 0.5px solid rgba(0,0,0,0.14);       color: rgba(0,0,0,0.42); }
+.top-btn:hover     { background: rgba(128,128,128,0.12); }
+.dark  .top-btn.on { background: rgba(255,255,255,0.13); border-color: rgba(255,255,255,0.38); color: rgba(255,255,255,0.9); }
+.light .top-btn.on { background: rgba(0,0,0,0.07);       border-color: rgba(0,0,0,0.28);       color: rgba(0,0,0,0.75); }
+
+#brand { position: relative; z-index: 2; text-align: center; margin-bottom: 1rem; }
+.logo-mark { font-size: 18px; letter-spacing: 8px; font-weight: 400; margin-bottom: 2px; transition: color 0.4s; }
+.tagline   { font-size: 9px; letter-spacing: 3.5px; text-transform: uppercase; transition: color 0.4s; }
+.dark  .logo-mark { color: rgba(255,255,255,0.88); } .dark  .tagline { color: rgba(255,255,255,0.28); }
+.light .logo-mark { color: rgba(40,30,20,0.88); }   .light .tagline { color: rgba(40,30,20,0.38); }
+
+#day-banner { position: relative; z-index: 2; width: 100%; border-radius: 12px; padding: 9px 14px; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; transition: background 0.4s, border-color 0.4s; }
+.dark  #day-banner { background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.1); }
+.light #day-banner { background: rgba(255,255,255,0.55); border: 0.5px solid rgba(0,0,0,0.08); }
+#day-dot    { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; transition: background 1s; }
+#day-date   { font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; transition: color 0.3s; }
+#day-reason { font-size: 11.5px; line-height: 1.45; transition: color 0.3s; }
+.dark  #day-date   { color: rgba(255,255,255,0.28); } .dark  #day-reason { color: rgba(255,255,255,0.7); }
+.light #day-date   { color: rgba(40,30,20,0.38); }   .light #day-reason { color: rgba(40,30,20,0.74); }
+
+#pod-wrap { position: relative; z-index: 2; margin-bottom: 1rem; display: flex; flex-direction: column; align-items: center; }
+#pod-ring-wrap { position: relative; width: 148px; height: 148px; display: flex; align-items: center; justify-content: center; }
+#pod-glow { width: 148px; height: 148px; border-radius: 50%; cursor: pointer; position: relative; flex-shrink: 0; }
+#pod-base { width: 82px; height: 13px; border-radius: 0 0 36px 36px; margin: -2px auto 0; transition: background 0.4s; }
+.dark  #pod-base { background: rgba(255,255,255,0.07); } .light #pod-base { background: rgba(0,0,0,0.08); }
+.ring { position: absolute; top: 0; left: 0; width: 148px; height: 148px; border-radius: 50%; pointer-events: none; }
+#r1 { animation: rA 5s ease-out infinite; }
+#r2 { animation: rA 5s ease-out infinite 1.6s; }
+#r3 { animation: rA 5s ease-out infinite 3.2s; }
+@keyframes rA { 0%{ transform:scale(1); opacity:0.32; } 100%{ transform:scale(2.4); opacity:0; } }
+#pod-inner { position: absolute; inset: 0; border-radius: 50%; animation: podBreathe 5s ease-in-out infinite; pointer-events: none; }
+@keyframes podBreathe { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.88;transform:scale(1.034);} }
+
+#color-label { position: relative; z-index: 2; text-align: center; margin-bottom: 0.4rem; }
+#color-name  { font-size: 19px; font-weight: 400; letter-spacing: 0.5px; margin-bottom: 3px; transition: color 0.4s; }
+#color-story { font-size: 12px; max-width: 270px; line-height: 1.65; font-style: italic; transition: color 0.4s; }
+.dark  #color-name  { color: rgba(255,255,255,0.88); } .dark  #color-story { color: rgba(255,255,255,0.4); }
+.light #color-name  { color: rgba(40,30,20,0.88); }   .light #color-story { color: rgba(40,30,20,0.5); }
+
+#prompt-card { position: relative; z-index: 2; border-radius: 14px; padding: 0.75rem 1.1rem; width: 100%; margin: 0.5rem 0 0.4rem; text-align: center; transition: background 0.4s, border-color 0.4s; }
+.dark  #prompt-card { background: rgba(255,255,255,0.055); border: 0.5px solid rgba(255,255,255,0.1); }
+.light #prompt-card { background: rgba(255,255,255,0.65);  border: 0.5px solid rgba(0,0,0,0.07); }
+#prompt-label { font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; transition: color 0.3s; }
+#prompt-text  { font-size: 13.5px; line-height: 1.65; min-height: 38px; display: flex; align-items: center; justify-content: center; transition: color 0.3s; }
+.dark  #prompt-label { color: rgba(255,255,255,0.25); } .dark  #prompt-text { color: rgba(255,255,255,0.76); }
+.light #prompt-label { color: rgba(40,30,20,0.34); }   .light #prompt-text { color: rgba(40,30,20,0.8); }
+
+#tabs { position: relative; z-index: 2; display: flex; gap: 3px; border-radius: 40px; padding: 3px; margin: 0.5rem 0 0.2rem; transition: background 0.4s, border-color 0.4s; }
+.dark  #tabs { background: rgba(255,255,255,0.055); border: 0.5px solid rgba(255,255,255,0.08); }
+.light #tabs { background: rgba(0,0,0,0.05);        border: 0.5px solid rgba(0,0,0,0.07); }
+.tab-btn { background: none; border: none; font-size: 11px; padding: 5px 13px; border-radius: 40px; cursor: pointer; font-family: inherit; letter-spacing: 0.4px; transition: background 0.2s, color 0.2s; }
+.dark  .tab-btn        { color: rgba(255,255,255,0.4); }
+.dark  .tab-btn.active { background: rgba(255,255,255,0.13); color: rgba(255,255,255,0.92); }
+.light .tab-btn        { color: rgba(40,30,20,0.44); }
+.light .tab-btn.active { background: rgba(255,255,255,0.82); color: rgba(40,30,20,0.9); }
+
+#panel { position: relative; z-index: 2; width: 100%; }
+.tab-pane { display: none; } .tab-pane.active { display: block; }
+
+#swatch-row { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; padding: 0.55rem 0; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s; position: relative; }
+.swatch:hover { transform: scale(1.2); }
+.dark  .swatch.selected { border-color: rgba(255,255,255,0.75); }
+.light .swatch.selected { border-color: rgba(0,0,0,0.4); }
+.sw-tip { position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: rgba(10,8,14,0.9); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); font-size: 10px; white-space: nowrap; padding: 4px 10px; border-radius: 20px; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 30; }
+.swatch:hover .sw-tip { opacity: 1; }
+
+#picker-area { padding: 0.45rem 0; }
+#spec-wrap   { position: relative; border-radius: 10px; overflow: hidden; cursor: crosshair; margin-bottom: 8px; }
+#spec-canvas { display: block; width: 100%; height: 130px; border-radius: 10px; }
+#spec-cursor { position: absolute; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.4); pointer-events: none; transform: translate(-50%,-50%); top: 50%; left: 50%; }
+#hue-wrap    { position: relative; margin-bottom: 10px; }
+#hue-canvas  { display: block; width: 100%; height: 16px; border-radius: 8px; cursor: pointer; }
+#hue-cursor  { position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1.5px rgba(0,0,0,0.35); pointer-events: none; transform: translate(-50%,-50%); }
+#picker-preview { display: flex; align-items: center; gap: 11px; margin-top: 8px; }
+#picked-swatch  { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(128,128,128,0.25); flex-shrink: 0; transition: background 0.3s; }
+#picker-info { flex: 1; }
+.pk-input { border-radius: 7px; font-size: 11.5px; padding: 5px 9px; font-family: inherit; margin-bottom: 5px; display: block; width: 100%; transition: background 0.3s, color 0.3s; }
+.dark  .pk-input { background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.76); }
+.light .pk-input { background: rgba(255,255,255,0.75); border: 0.5px solid rgba(0,0,0,0.12);       color: rgba(40,30,20,0.8); }
+#pk-hex { width: 92px !important; }
+#picker-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.pk-btn { border-radius: 20px; font-size: 11px; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+.dark  .pk-btn       { background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.65); }
+.dark  .pk-btn:hover { background: rgba(255,255,255,0.14); }
+.light .pk-btn       { background: rgba(255,255,255,0.65); border: 0.5px solid rgba(0,0,0,0.1);       color: rgba(40,30,20,0.65); }
+.light .pk-btn:hover { background: rgba(255,255,255,0.95); }
+#picker-saved { display: none; flex-direction: column; align-items: center; text-align: center; padding: 1.2rem 0.5rem; gap: 8px; }
+#pks-dot  { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(128,128,128,0.2); margin: 0 auto; }
+#pks-name { font-size: 13.5px; letter-spacing: 0.4px; transition: color 0.3s; }
+#pks-sub  { font-size: 11px; font-style: italic; transition: color 0.3s; }
+.dark  #pks-name { color: rgba(255,255,255,0.76); } .dark  #pks-sub { color: rgba(255,255,255,0.32); }
+.light #pks-name { color: rgba(40,30,20,0.76); }   .light #pks-sub { color: rgba(40,30,20,0.38); }
+#pk-reset { background: none; border-radius: 20px; font-size: 11px; padding: 5px 14px; cursor: pointer; font-family: inherit; margin-top: 4px; transition: color 0.2s; }
+.dark  #pk-reset       { border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.34); }
+.dark  #pk-reset:hover { color: rgba(255,255,255,0.65); }
+.light #pk-reset       { border: 0.5px solid rgba(0,0,0,0.1);       color: rgba(40,30,20,0.4); }
+.light #pk-reset:hover { color: rgba(40,30,20,0.72); }
+
+#journal-area { padding: 0.4rem 0; }
+#fav-list { display: flex; flex-direction: column; gap: 7px; max-height: 200px; overflow-y: auto; padding-right: 3px; }
+#fav-list::-webkit-scrollbar { width: 3px; } #fav-list::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.2); border-radius: 3px; }
+.fav-item { border-radius: 10px; padding: 8px 9px; display: flex; align-items: flex-start; gap: 9px; }
+.dark  .fav-item { background: rgba(255,255,255,0.055); border: 0.5px solid rgba(255,255,255,0.08); }
+.light .fav-item { background: rgba(255,255,255,0.6);   border: 0.5px solid rgba(0,0,0,0.07); }
+.fav-dot  { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; cursor: pointer; transition: transform 0.15s; margin-top: 1px; }
+.fav-dot:hover { transform: scale(1.1); }
+.fav-body { flex: 1; min-width: 0; }
+.fav-name { font-size: 11.5px; font-weight: 500; margin-bottom: 1px; transition: color 0.3s; }
+.fav-note { font-size: 11px; font-style: italic; line-height: 1.5; word-break: break-word; transition: color 0.3s; }
+.dark  .fav-name { color: rgba(255,255,255,0.82); } .dark  .fav-note { color: rgba(255,255,255,0.38); }
+.light .fav-name { color: rgba(40,30,20,0.82); }   .light .fav-note { color: rgba(40,30,20,0.46); }
+.fav-del       { background: none; border: none; font-size: 14px; cursor: pointer; padding: 1px 4px; align-self: flex-start; flex-shrink: 0; transition: color 0.2s; }
+.dark  .fav-del       { color: rgba(255,255,255,0.18); } .dark  .fav-del:hover { color: rgba(255,255,255,0.52); }
+.light .fav-del       { color: rgba(0,0,0,0.16); }       .light .fav-del:hover { color: rgba(0,0,0,0.48); }
+#empty-fav { text-align: center; font-size: 12px; padding: 1.25rem; line-height: 1.9; }
+.dark  #empty-fav { color: rgba(255,255,255,0.27); } .light #empty-fav { color: rgba(40,30,20,0.34); }
+#save-form { margin-top: 9px; border-radius: 10px; padding: 9px 10px; }
+.dark  #save-form { background: rgba(255,255,255,0.045); border: 0.5px solid rgba(255,255,255,0.08); }
+.light #save-form { background: rgba(255,255,255,0.55);  border: 0.5px solid rgba(0,0,0,0.07); }
+#save-form-label { font-size: 8.5px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 5px; }
+.dark  #save-form-label { color: rgba(255,255,255,0.26); } .light #save-form-label { color: rgba(40,30,20,0.34); }
+#journal-input { width: 100%; border-radius: 7px; font-size: 12px; padding: 7px 9px; font-family: inherit; resize: none; height: 56px; line-height: 1.5; }
+.dark  #journal-input { background: rgba(255,255,255,0.055); border: 0.5px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.72); }
+.light #journal-input { background: rgba(255,255,255,0.75);  border: 0.5px solid rgba(0,0,0,0.1);       color: rgba(40,30,20,0.78); }
+#save-btn { margin-top: 6px; border-radius: 20px; font-size: 11px; padding: 6px 18px; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+.dark  #save-btn       { background: rgba(255,255,255,0.1);  border: 0.5px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
+.dark  #save-btn:hover { background: rgba(255,255,255,0.17); }
+.light #save-btn       { background: rgba(255,255,255,0.72); border: 0.5px solid rgba(0,0,0,0.11);      color: rgba(40,30,20,0.75); }
+.light #save-btn:hover { background: rgba(255,255,255,0.97); }
+
+#cal-wrap   { padding: 0.4rem 0; }
+#cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+#cal-month-label { font-size: 12px; letter-spacing: 0.5px; transition: color 0.3s; }
+.dark  #cal-month-label { color: rgba(255,255,255,0.68); } .light #cal-month-label { color: rgba(40,30,20,0.72); }
+.cal-nav       { background: none; border-radius: 20px; font-size: 11px; padding: 3px 11px; cursor: pointer; font-family: inherit; transition: color 0.2s; }
+.dark  .cal-nav       { border: 0.5px solid rgba(255,255,255,0.11); color: rgba(255,255,255,0.4); }
+.dark  .cal-nav:hover { color: rgba(255,255,255,0.75); }
+.light .cal-nav       { border: 0.5px solid rgba(0,0,0,0.1);       color: rgba(40,30,20,0.44); }
+.light .cal-nav:hover { color: rgba(40,30,20,0.82); }
+#cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cal-dow { font-size: 9px; text-align: center; padding: 2px 0; letter-spacing: 0.5px; }
+.dark  .cal-dow { color: rgba(255,255,255,0.22); } .light .cal-dow { color: rgba(40,30,20,0.3); }
+.cal-day { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; position: relative; transition: transform 0.15s, color 0.3s; }
+.dark  .cal-day           { color: rgba(255,255,255,0.3); }  .light .cal-day           { color: rgba(40,30,20,0.3); }
+.cal-day.has-entry        { cursor: pointer; }
+.dark  .cal-day.has-entry { color: rgba(255,255,255,0.85); } .light .cal-day.has-entry { color: rgba(40,30,20,0.84); }
+.cal-day.has-entry:hover  { transform: scale(1.15); }
+.cal-day.today { border: 0.5px solid rgba(128,128,128,0.32); }
+.cal-dot { position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; }
+#cal-detail { margin-top: 9px; border-radius: 10px; padding: 9px 11px; display: none; }
+.dark  #cal-detail { background: rgba(255,255,255,0.045); border: 0.5px solid rgba(255,255,255,0.08); }
+.light #cal-detail { background: rgba(255,255,255,0.6);   border: 0.5px solid rgba(0,0,0,0.07); }
+#cal-detail.show   { display: block; }
+#cal-detail-header { display: flex; align-items: center; gap: 9px; margin-bottom: 5px; }
+#cal-detail-dot    { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+#cal-detail-name   { font-size: 12.5px; font-weight: 500; transition: color 0.3s; }
+#cal-detail-date   { font-size: 10px; transition: color 0.3s; }
+#cal-detail-note   { font-size: 11.5px; font-style: italic; line-height: 1.55; transition: color 0.3s; }
+.dark  #cal-detail-name { color: rgba(255,255,255,0.78); } .dark  #cal-detail-date { color: rgba(255,255,255,0.3); } .dark  #cal-detail-note { color: rgba(255,255,255,0.44); }
+.light #cal-detail-name { color: rgba(40,30,20,0.82); }   .light #cal-detail-date { color: rgba(40,30,20,0.38); }  .light #cal-detail-note { color: rgba(40,30,20,0.52); }
+
+#audio-bar  { position: relative; z-index: 2; width: 100%; margin-top: 0.5rem; }
+#audio-card { border-radius: 12px; padding: 9px 13px; display: flex; align-items: center; gap: 10px; }
+.dark  #audio-card { background: rgba(255,255,255,0.055); border: 0.5px solid rgba(255,255,255,0.1); }
+.light #audio-card { background: rgba(255,255,255,0.65);  border: 0.5px solid rgba(0,0,0,0.08); }
+#audio-play { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s; }
+.dark  #audio-play       { border: 0.5px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.07); }
+.dark  #audio-play:hover { background: rgba(255,255,255,0.16); }
+.light #audio-play       { border: 0.5px solid rgba(0,0,0,0.13); background: rgba(0,0,0,0.05); }
+.light #audio-play:hover { background: rgba(0,0,0,0.1); }
+#audio-play svg { width: 12px; height: 12px; }
+.dark  #audio-play svg { fill: rgba(255,255,255,0.72); } .light #audio-play svg { fill: rgba(40,30,20,0.65); }
+#audio-info  { flex: 1; min-width: 0; }
+#audio-title { font-size: 11.5px; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.3s; }
+#audio-sub   { font-size: 9.5px; letter-spacing: 0.2px; transition: color 0.3s; }
+.dark  #audio-title { color: rgba(255,255,255,0.7); }  .dark  #audio-sub { color: rgba(255,255,255,0.28); }
+.light #audio-title { color: rgba(40,30,20,0.72); }    .light #audio-sub { color: rgba(40,30,20,0.38); }
+#audio-progress-wrap { width: 100%; height: 2px; border-radius: 1px; margin-top: 4px; cursor: pointer; }
+.dark  #audio-progress-wrap { background: rgba(255,255,255,0.1); } .light #audio-progress-wrap { background: rgba(0,0,0,0.08); }
+#audio-progress { height: 2px; border-radius: 1px; background: rgba(200,150,80,0.7); width: 0%; transition: width 0.3s; }
+#audio-status   { font-size: 9px; }
+.dark  #audio-status { color: rgba(255,255,255,0.2); } .light #audio-status { color: rgba(40,30,20,0.28); }
+
+#audio-generating { display: none; align-items: center; gap: 7px; padding: 4px 0 2px; }
+#audio-generating.show { display: flex; }
+.gen-dot { width: 5px; height: 5px; border-radius: 50%; animation: genPulse 1.4s ease-in-out infinite; }
+.dark  .gen-dot { background: rgba(255,255,255,0.4); } .light .gen-dot { background: rgba(40,30,20,0.35); }
+.gen-dot:nth-child(2){ animation-delay:0.2s; } .gen-dot:nth-child(3){ animation-delay:0.4s; }
+@keyframes genPulse { 0%,80%,100%{transform:scale(0.7);opacity:0.4;} 40%{transform:scale(1);opacity:1;} }
+#gen-label { font-size: 9.5px; }
+.dark  #gen-label { color: rgba(255,255,255,0.38); } .light #gen-label { color: rgba(40,30,20,0.42); }
+
+#bottom-row { position: relative; z-index: 2; display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 0.65rem; }
+.ctrl-btn { border-radius: 40px; font-size: 11px; padding: 6px 14px; cursor: pointer; font-family: inherit; transition: background 0.2s; }
+.dark  .ctrl-btn        { background: rgba(255,255,255,0.065); border: 0.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.56); }
+.dark  .ctrl-btn:hover  { background: rgba(255,255,255,0.12); }
+.dark  .ctrl-btn.active { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.28); color: #fff; }
+.light .ctrl-btn        { background: rgba(255,255,255,0.55); border: 0.5px solid rgba(0,0,0,0.1);       color: rgba(40,30,20,0.55); }
+.light .ctrl-btn:hover  { background: rgba(255,255,255,0.88); }
+.light .ctrl-btn.active { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.2); color: rgba(40,30,20,0.9); }
+
+#hints-panel { position: relative; z-index: 2; width: 100%; border-radius: 14px; padding: 16px 18px; margin-top: 12px; display: none; flex-direction: column; gap: 12px; animation: hintsIn 0.3s ease; }
+#hints-panel.open { display: flex; }
+@keyframes hintsIn { from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
+.dark  #hints-panel { background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.1); }
+.light #hints-panel { background: rgba(255,255,255,0.62); border: 0.5px solid rgba(0,0,0,0.08); }
+#hints-heading { font-size: 8.5px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 2px; }
+.dark  #hints-heading { color: rgba(255,255,255,0.28); } .light #hints-heading { color: rgba(40,30,20,0.36); }
+.hint-row  { display: flex; align-items: flex-start; gap: 11px; }
+.hint-icon { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+.dark  .hint-icon { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); }
+.light .hint-icon { background: rgba(0,0,0,0.05);       color: rgba(40,30,20,0.5); }
+.hint-text  { flex: 1; padding-top: 3px; }
+.hint-label { font-size: 11.5px; font-weight: 500; margin-bottom: 2px; transition: color 0.3s; }
+.hint-desc  { font-size: 10.5px; line-height: 1.56; transition: color 0.3s; }
+.dark  .hint-label { color: rgba(255,255,255,0.8); }  .dark  .hint-desc { color: rgba(255,255,255,0.38); }
+.light .hint-label { color: rgba(40,30,20,0.82); }    .light .hint-desc { color: rgba(40,30,20,0.48); }
+
+#breathing-hint { position: relative; z-index: 2; margin-top: 0.35rem; font-size: 10px; letter-spacing: 1px; min-height: 13px; }
+.dark  #breathing-hint { color: rgba(255,255,255,0.2); } .light #breathing-hint { color: rgba(40,30,20,0.3); }
+
+#onboard-overlay { position: fixed; inset: 0; z-index: 200; pointer-events: none; }
+#onboard-overlay.active { pointer-events: all; }
+#onboard-scrim  { position: absolute; inset: 0; background: rgba(6,4,10,0.78); opacity: 0; transition: opacity 0.5s ease; }
+#onboard-overlay.active #onboard-scrim { opacity: 1; }
+.onboard-card   { position: absolute; display: flex; flex-direction: column; align-items: center; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.16); border-radius: 16px; padding: 17px 20px 14px; max-width: 210px; text-align: center; opacity: 0; transform: translateY(8px); transition: opacity 0.45s ease, transform 0.45s ease; pointer-events: none; }
+.onboard-card.visible { opacity: 1; transform: translateY(0); pointer-events: all; }
+.onboard-icon   { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 14px; color: rgba(255,255,255,0.7); }
+.onboard-title  { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.9); margin-bottom: 4px; }
+.onboard-body   { font-size: 10.5px; color: rgba(255,255,255,0.46); line-height: 1.58; }
+.onboard-dot    { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.9); transform: translate(-50%,-50%); pointer-events: none; opacity: 0; transition: opacity 0.3s ease 0.2s; }
+.onboard-dot.visible { opacity: 1; animation: dotPulse 2s ease-out infinite; }
+@keyframes dotPulse { 0%{box-shadow:0 0 0 0 rgba(255,255,255,0.3);}70%{box-shadow:0 0 0 8px rgba(255,255,255,0);}100%{box-shadow:0 0 0 0 rgba(255,255,255,0);} }
+#onboard-next   { margin-top: 11px; background: rgba(255,255,255,0.1); border: 0.5px solid rgba(255,255,255,0.2); border-radius: 20px; color: rgba(255,255,255,0.74); font-size: 10.5px; padding: 5px 15px; cursor: pointer; font-family: inherit; }
+#onboard-skip   { position: absolute; bottom: 22px; right: 22px; background: none; border: none; color: rgba(255,255,255,0.24); font-size: 10px; cursor: pointer; font-family: inherit; pointer-events: all; }
+#onboard-step-dots { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; pointer-events: none; }
+.step-dot    { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.18); transition: background 0.3s; }
+.step-dot.on { background: rgba(255,255,255,0.62); }
+</style>
+</head>
+<body class="dark">
+<div id="page-wash"></div>
+<div id="shell" class="dark">
+
+  <div id="onboard-overlay">
+    <div id="onboard-scrim"></div>
+    <div id="onboard-skip" onclick="dismissOnboard()">skip</div>
+    <div id="onboard-step-dots"></div>
+  </div>
+
+  <div id="top-controls">
+    <button class="top-btn" id="hints-btn" onclick="toggleHints()">? Hints</button>
+    <button class="top-btn" id="mode-btn"  onclick="toggleMode()">Light mode</button>
+  </div>
+
+  <div id="brand"><div class="logo-mark">GLOW POD</div><div class="tagline">Light · Story · Inspiration</div></div>
+
+  <div id="day-banner">
+    <div id="day-dot"></div>
+    <div><div id="day-date"></div><div id="day-reason"></div></div>
+  </div>
+
+  <div id="pod-wrap">
+    <div id="pod-ring-wrap">
+      <div class="ring" id="r1"></div>
+      <div class="ring" id="r2"></div>
+      <div class="ring" id="r3"></div>
+      <div id="pod-glow" onclick="podClick()"><div id="pod-inner"></div></div>
+    </div>
+    <div id="pod-base"></div>
+  </div>
+
+  <div id="color-label">
+    <div id="color-name"></div>
+    <div id="color-story"></div>
+  </div>
+
+  <div id="prompt-card">
+    <div id="prompt-label">Today's prompt</div>
+    <div id="prompt-text"></div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab-btn active" onclick="showTab('gallery',this)">Gallery</button>
+    <button class="tab-btn" onclick="showTab('picker',this)">Eyedropper</button>
+    <button class="tab-btn" onclick="showTab('journal',this)">Journal</button>
+    <button class="tab-btn" onclick="showTab('calendar',this)">Calendar</button>
+  </div>
+
+  <div id="panel">
+    <div class="tab-pane active" id="pane-gallery"><div id="swatch-row"></div></div>
+
+    <div class="tab-pane" id="pane-picker">
+      <div id="picker-area">
+        <div id="spec-wrap"><canvas id="spec-canvas"></canvas><div id="spec-cursor"></div></div>
+        <div id="hue-wrap"><canvas id="hue-canvas"></canvas><div id="hue-cursor"></div></div>
+        <div id="picker-preview">
+          <div id="picked-swatch"></div>
+          <div id="picker-info">
+            <input class="pk-input" id="pk-hex" maxlength="7" placeholder="#ffbf00" style="width:92px"/>
+            <input class="pk-input" id="pk-name" placeholder="Name this color…"/>
+            <div id="picker-btns">
+              <button class="pk-btn" onclick="applyPick()">Set as pod</button>
+              <button class="pk-btn" onclick="savePick()">Save &amp; close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="picker-saved">
+        <div id="pks-dot"></div><div id="pks-name"></div><div id="pks-sub"></div>
+        <button id="pk-reset" onclick="resetPick()">Pick another color</button>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pane-journal">
+      <div id="journal-area">
+        <div id="fav-list"></div>
+        <div id="save-form">
+          <div id="save-form-label">Save current color</div>
+          <textarea id="journal-input" placeholder="What does this color stir in you?"></textarea>
+          <button id="save-btn" onclick="saveFav()">Save to journal</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pane-calendar">
+      <div id="cal-wrap">
+        <div id="cal-header">
+          <button class="cal-nav" onclick="calNav(-1)">&#8592;</button>
+          <div id="cal-month-label"></div>
+          <button class="cal-nav" onclick="calNav(1)">&#8594;</button>
+        </div>
+        <div id="cal-grid"></div>
+        <div id="cal-detail">
+          <div id="cal-detail-header">
+            <div id="cal-detail-dot"></div>
+            <div><div id="cal-detail-name"></div><div id="cal-detail-date"></div></div>
+          </div>
+          <div id="cal-detail-note"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="audio-bar">
+    <div id="audio-card">
+      <div id="audio-play" onclick="toggleAudio()">
+        <svg id="icon-play"  viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12"/></svg>
+        <svg id="icon-pause" viewBox="0 0 10 12" style="display:none"><rect x="0" y="0" width="3.5" height="12"/><rect x="6.5" y="0" width="3.5" height="12"/></svg>
+      </div>
+      <div id="audio-info">
+        <div id="audio-title">Color story — Amber Skies</div>
+        <div id="audio-sub">Tap play for your color meditation</div>
+        <div id="audio-generating">
+          <div class="gen-dot"></div><div class="gen-dot"></div><div class="gen-dot"></div>
+          <span id="gen-label">Warming up Aria's voice…</span>
+        </div>
+        <div id="audio-progress-wrap" onclick="seekAudio(event)"><div id="audio-progress"></div></div>
+        <div id="audio-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom-row">
+    <button class="ctrl-btn active" id="btn-reflect" onclick="setMode('reflect',this)">Reflect</button>
+    <button class="ctrl-btn" id="btn-breathe"        onclick="setMode('breathe',this)">Breathe</button>
+    <button class="ctrl-btn" id="btn-explore"        onclick="setMode('explore',this)">Explore</button>
+    <button class="ctrl-btn"                         onclick="nextColor()">Next</button>
+  </div>
+
+  <div id="hints-panel">
+    <div id="hints-heading">How to use Glow Pod</div>
+    <div class="hint-row"><div class="hint-icon">◎</div><div class="hint-text"><div class="hint-label">The pod</div><div class="hint-desc">Tap to enter breathing mode. The rings pulse gently outward. Tap again while breathing to cycle colors.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">☀</div><div class="hint-text"><div class="hint-label">Today's color</div><div class="hint-desc">Each day a color is chosen for a reason — tied to the season, a date, or a story worth sitting with.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">⬡</div><div class="hint-text"><div class="hint-label">Gallery</div><div class="hint-desc">Ten curated colors with a backstory and prompts. Tap any swatch to cast it onto the pod.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">◈</div><div class="hint-text"><div class="hint-label">Eyedropper</div><div class="hint-desc">Drag across the spectrum to mix any color. Name it and save it. It becomes yours.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">◇</div><div class="hint-text"><div class="hint-label">Journal</div><div class="hint-desc">Save any color with a personal note. Tap a saved dot to load that color back onto the pod.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">▦</div><div class="hint-text"><div class="hint-label">Calendar</div><div class="hint-desc">Every journaled color appears as a colored dot on the calendar — a living record of your moods.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">▷</div><div class="hint-text"><div class="hint-label">Color story</div><div class="hint-desc">Tap play and Aria reads you a warm, personal meditation written for your active color.</div></div></div>
+    <div class="hint-row"><div class="hint-icon">◐</div><div class="hint-text"><div class="hint-label">Light / Dark</div><div class="hint-desc">Toggle between light and dark. The color wash fills the entire window in both modes.</div></div></div>
+  </div>
+
+  <div id="breathing-hint"></div>
+</div>
+
+<script>
+// ── Configuration ─────────────────────────────────────────────────────────
+// STEP 1: Paste your Cloudflare Worker URL below (e.g. https://glow-pod-tts.yourname.workers.dev)
+const WORKER_URL = 'https://glowpod-tts.mromslo.workers.dev';
+const ELEVENLABS_KEY  = 'sk_b06fd0b448d3290d2ebcd5d4303582b3cbeeb8e812b62245';
+const ELEVENLABS_VOICE = 'QeKcckTBICc3UuWL7ETc'; // Aria
+
+// ── Color data + pre-written meditation scripts ───────────────────────────
+const COLORS = [
+  {
+    name: 'Amber Skies', hex: '#FFBF00',
+    story: 'Fossilized resin that holds time itself — amber has glowed for tens of millions of years.',
+    prompts: ['Write about something you want to preserve forever.','Recall a memory that feels warm but distant.','Imagine a future archaeologist discovering your life.','What feels golden in your life right now?'],
+    bg: 'radial-gradient(ellipse at 42% 28%, #3a2800, #180f00)',
+    script: `Hello. Come in. Today's color is Amber Skies.
+
+Amber is one of the oldest things you can hold in your hand. Tree resin, hardened over millions of years, still warm to the touch. It holds time inside it. Sometimes, something tiny — a feather, a bubble of air — perfectly preserved.
+
+Find a comfortable place. Let this golden warmth settle around you like afternoon light through old glass.
+
+Breathe in slowly, for four counts. One. Two. Three. Four.
+Hold gently. One. Two.
+And breathe out, long and easy, for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+As you breathe, let this question come to you softly: What is something you want to preserve forever?
+
+Don't try to answer it. Just let it float there, suspended — the way something small and beautiful gets caught in amber.
+
+Breathe in. Hold. Breathe out.
+
+Amber Skies holds warmth for you today. You don't have to do anything with it. Just let yourself be held by it for a moment.
+
+Take your time. The light is patient.`
+  },
+  {
+    name: 'Horizon Blue', hex: '#4A90E2',
+    story: 'The sky is blue because shorter wavelengths scatter more easily — always just out of reach.',
+    prompts: ['Write about something just beyond your grasp.','List 5 things you\'re moving toward.','What are you chasing that keeps shifting?','Imagine a place where the sky never changes.'],
+    bg: 'radial-gradient(ellipse at 48% 22%, #081428, #020810)',
+    script: `Hi. Take a breath. Today's color is Horizon Blue.
+
+Here's something worth knowing: the sky isn't blue because it is blue. It's blue because of the way light scatters. The color you're seeing is an effect — a beautiful, unreachable effect. The horizon is always moving away. You can sail toward it your whole life and it will always be exactly as far.
+
+There's something freeing about that, if you let it be.
+
+Let this blue settle around you like open air. Like the feeling just before something begins.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What is something that feels just beyond your reach right now?
+
+Not the reaching itself — just notice what it is. Hold it lightly, the way you hold the idea of a horizon.
+
+Breathe in. Hold. Breathe out.
+
+Horizon Blue isn't asking you to arrive. It's asking you to keep moving toward, with your eyes open and your chest a little more free than it was a moment ago.
+
+You're doing fine.`
+  },
+  {
+    name: 'Deep Moss', hex: '#556B2F',
+    story: 'Moss thrives without roots — patience and quiet resilience made visible.',
+    prompts: ['Write about a time you grew slowly but steadily.','Reflect on where you feel most grounded.','What are you nurturing without rushing?','What in your life is ancient and still alive?'],
+    bg: 'radial-gradient(ellipse at 44% 26%, #0e1808, #060e04)',
+    script: `Hey. Slow down with me for a moment. Today's color is Deep Moss.
+
+Moss doesn't have roots. It absorbs what it needs directly from the air around it — from mist, from breath, from simply being present in a place long enough. It doesn't rush. It doesn't compete. It just quietly, persistently becomes.
+
+In Japanese gardens, moss is tended for decades. It's a sign that a place has been cared for, that time has passed gently here.
+
+Let this deep green settle around you. Feel the ground underneath you, real and steady.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out slowly for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What are you nurturing right now, without rushing it?
+
+Maybe it's something small. Maybe it's something you've been patient with for longer than you expected. Let yourself feel good about that patience.
+
+Breathe in. Hold. Breathe out.
+
+Deep Moss doesn't need you to be fast or loud or ready. It just needs you to be here, absorbing quietly, becoming slowly.
+
+That's enough. That's actually everything.`
+  },
+  {
+    name: 'Dawn Blush', hex: '#F4A6A6',
+    story: 'Pink skies at dawn — sunlight\'s long journey through the atmosphere, arriving as tenderness.',
+    prompts: ['Write the first line of something new.','Think of a moment that felt like a fresh start.','What softness have you been keeping from yourself?','What are you ready to begin?'],
+    bg: 'radial-gradient(ellipse at 46% 28%, #2e0e0e, #140606)',
+    script: `Good morning. Or whatever time it is for you — this color works at any hour. Today's color is Dawn Blush.
+
+The pink of sunrise happens because light has traveled a long, long way to reach you. It's passed through so much atmosphere by the time it arrives that only the softest wavelengths remain. What you're seeing is what survives the journey. Tenderness, basically. That's what's left after everything else falls away.
+
+Let this soft warmth rest on your shoulders like the first light of a day that hasn't been touched yet.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out gently for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What softness have you been keeping from yourself?
+
+Not anyone else — you. What gentle thing have you been waiting to give yourself permission for?
+
+Breathe in. Hold. Breathe out.
+
+Dawn Blush is a beginning. It comes every single day, whether you notice it or not. Today you noticed. That means something.
+
+Whatever you're beginning — even just this breath — it's enough.`
+  },
+  {
+    name: 'Soft Ember', hex: '#FF6F3C',
+    story: 'An ember glows not from flame but from residual heat — a quieter fire that sustains.',
+    prompts: ['Write about something still alive in you.','Reflect on a passion that hasn\'t gone out.','What are you still holding warmth for?','Who deserves a little of this light from you today?'],
+    bg: 'radial-gradient(ellipse at 42% 24%, #2e0e06, #130500)',
+    script: `Come close. Today's color is Soft Ember.
+
+An ember isn't fire. It's what's left after the fire — carbon, slowly releasing heat without burning. No drama. No consuming. Just a steady, quiet glow that can last for hours. If you know how to tend it, it can start a whole new fire whenever you're ready.
+
+There's something in you like that right now. Something that didn't go out even when it probably could have.
+
+Let this warm orange settle around you like the glow of a fire you're sitting near, not in.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out slowly for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What is something still alive in you?
+
+A hope. A care. A love. A dream you haven't quite let go of, even when it felt like you should.
+
+Breathe in. Hold. Breathe out.
+
+Soft Ember doesn't need you to burn bright right now. It just needs you to stay warm. To tend the glow. To know that quietly alive is still alive.
+
+You're still here. That matters more than you know.`
+  },
+  {
+    name: 'Velvet Indigo', hex: '#3F3D56',
+    story: 'Once called blue gold — traded across continents. The color of intuition and depth.',
+    prompts: ['Write about something you don\'t fully understand yet.','List questions you are currently holding.','What truth keeps finding its way back to you?','Imagine a dream you haven\'t had yet.'],
+    bg: 'radial-gradient(ellipse at 50% 22%, #0c0c18, #060608)',
+    script: `Settle in. This one's for going deeper. Today's color is Velvet Indigo.
+
+Indigo was once so rare and so valuable that it was called blue gold. It traveled the ancient trade routes — from India across Persia, through the markets of Egypt, into the hands of European painters who used it sparingly, for the things that mattered most. The night sky. A saint's robe. The space between stars.
+
+It's the color between blue and violet — between knowing and wondering. Between thought and intuition.
+
+Let this deep, quiet color settle around you like the hour when it gets dark enough to finally think clearly.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What is a question you've been carrying lately? Not looking for an answer — just notice the question. Let it exist in this color.
+
+Breathe in. Hold. Breathe out.
+
+Velvet Indigo doesn't demand resolution. It makes space for the things that take time to understand. For the things you can feel before you can name them.
+
+You're allowed to sit in the question. That's not confusion. That's depth.`
+  },
+  {
+    name: 'Sunlit Ochre', hex: '#CC7722',
+    story: 'Ochre appears in cave paintings 40,000 years old — a direct line to the first humans who made art.',
+    prompts: ['Write about something ancient in your life.','What do you create that might outlast you?','Think about what humans have always needed.','Make a mark, then respond to it.'],
+    bg: 'radial-gradient(ellipse at 44% 26%, #281408, #100800)',
+    script: `Hey. I want you to think about something. Today's color is Sunlit Ochre.
+
+Forty thousand years ago, a human being climbed into a cave, mixed iron oxide with animal fat, and painted a hand on a wall. Not because anyone told them to. Not because it would be seen by many people. They just needed to make a mark. To say: I was here. I saw something. I made something.
+
+That is the oldest impulse we have. And you have it too.
+
+Let this warm, earthy color settle around you like afternoon sunlight on dry ground. Like something ancient and completely yours.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What do you make? Or what do you want to make? Even something small — a meal, a kind word, a rearranged room. Something that says: I was here. I shaped this.
+
+Breathe in. Hold. Breathe out.
+
+Sunlit Ochre connects you to every person who ever reached for something to make meaning with. That's not a small thing. That's the whole story of us.
+
+You're part of it.`
+  },
+  {
+    name: 'Sea Glass Green', hex: '#7ED9C4',
+    story: 'Sea glass begins broken. Years of waves and sand smooth the sharpest edges into something gentle.',
+    prompts: ['Write about something that softened you.','Reflect on a change that took a long time.','What has time transformed in you?','Imagine what you\'re still becoming.'],
+    bg: 'radial-gradient(ellipse at 52% 22%, #081c18, #030e0a)',
+    script: `Take a breath. Today's color is Sea Glass Green.
+
+Sea glass used to be something broken. A bottle, maybe, or a jar — tossed into the ocean, cracked, sharp-edged, useless. And then the waves got hold of it. Years and years of salt water and sand, tumbling it over and over, wearing down every sharp edge until what's left is something soft. Something smooth. Something people pick up and keep.
+
+What was once just broken glass is now something people call beautiful.
+
+Let this soft, cool green wash over you like water that's been warmed by sun.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out slowly for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What is something that softened you? Something that took time, and friction, and patience — and changed your edges into something gentler?
+
+Breathe in. Hold. Breathe out.
+
+Sea Glass Green is about what you're still becoming. The tumbling isn't done. But look at how far you've already come from the thing you used to be.
+
+You're becoming something worth keeping.`
+  },
+  {
+    name: 'Lunar Silver', hex: '#C0C0C0',
+    story: 'The Moon reflects rather than shines — its silver glow has guided travelers across every era.',
+    prompts: ['Write about something you reflect rather than create.','List what illuminates you.','Imagine seeing your life from far away.','Sit in quiet and notice the subtle shifts.'],
+    bg: 'radial-gradient(ellipse at 50% 24%, #141414, #080808)',
+    script: `Settle. Quietly. Today's color is Lunar Silver.
+
+The moon doesn't make its own light. It never has. Everything you've ever seen the moon do — every tide it's pulled, every shadow it's cast, every poem it's inspired — all of it was borrowed light. Reflected. Offered back.
+
+There's something remarkable about that. You don't have to generate everything from scratch. Sometimes, being still and reflective is its own kind of shining.
+
+Let this cool, quiet silver settle around you like a clear night. Like the feeling of standing outside when everything's still and the sky is enormous.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What illuminates you? What are the sources of light in your life that you reflect out into the world?
+
+Breathe in. Hold. Breathe out.
+
+Lunar Silver asks nothing from you right now except stillness. Let the world be a little far away. Let yourself be the quiet thing at the center, reflecting what matters.
+
+That's its own kind of gift.`
+  },
+  {
+    name: 'Electric Orchid', hex: '#DA70D6',
+    story: 'Orchid doesn\'t exist in the spectrum — it\'s invented by your brain blending red and blue.',
+    prompts: ['Create something that feels unusual or bold.','Write about a version of yourself you don\'t show often.','Combine two unrelated ideas into one.','Take one creative risk today, even a small one.'],
+    bg: 'radial-gradient(ellipse at 48% 26%, #200820, #0c040c)',
+    script: `Okay. This one's a little wild. Today's color is Electric Orchid.
+
+Here's something that should stop you: this color doesn't technically exist. Orchid — this magenta-purple — isn't in the rainbow. It isn't a wavelength of light. Your eyes encounter red and violet at the same time, and your brain, not knowing what to do with that, invents a color. Makes one up. Creates something that wasn't there before.
+
+You do this too. More than you know.
+
+Let this vivid, invented color fill the space around you — electric and a little strange and completely yours.
+
+Breathe in for four. One. Two. Three. Four.
+Hold for two. One. Two.
+Breathe out for six. One. Two. Three. Four. Five. Six.
+Rest.
+
+What is a version of yourself that you don't show very often? Not hidden — just waiting. The one that does things a little sideways, a little bolder, a little more surprising.
+
+Breathe in. Hold. Breathe out.
+
+Electric Orchid is proof that the most interesting things are invented. Made up. Imagined into being. You're allowed to do that too.
+
+What will you invent today?`
+  }
+];
+
+const EXPLORE=['Amber Skies before writing something you want to last.','Horizon Blue when chasing something just out of reach.','Deep Moss for slow mornings and patient work.','Dawn Blush when you need to begin again.','Soft Ember for the passion that never quite goes out.','Velvet Indigo for sitting with unanswerable questions.','Sunlit Ochre to connect with something ancient.','Sea Glass Green when you\'re ready to let time work.','Lunar Silver when you need to reflect rather than act.','Electric Orchid to unlock the version of you that surprises.'];
+const FD={'4-22':{idx:2,r:'Earth Day — Deep Moss, for the patience of living things.'},'4-30':{idx:0,r:'End of April — Amber Skies, to preserve what this month held.'},'5-1':{idx:7,r:'May Day — Sea Glass Green, shaped by time into something new.'},'5-4':{idx:1,r:'Monday — Horizon Blue, for the week stretching out ahead.'},'6-21':{idx:0,r:'Summer Solstice — Amber Skies, the longest warmest light.'},'10-31':{idx:5,r:'Halloween — Velvet Indigo, for questions that live in the dark.'},'12-21':{idx:8,r:'Winter Solstice — Lunar Silver, the longest night\'s reflection.'},'2-14':{idx:4,r:'Valentine\'s Day — Soft Ember, warmth that doesn\'t consume.'},'1-1':{idx:3,r:'New Year — Dawn Blush, for everything beginning again.'}};
+
+const now=new Date(),MD=`${now.getMonth()+1}-${now.getDate()}`;
+const fd=FD[MD],fi=fd?fd.idx:Math.abs(now.getDate()*7)%COLORS.length;
+let cur=fi,mode='reflect',mInt=null,pHex='#FFBF00',pHue=0,sX=0.5,sY=0.5,pSaved=false,isDark=true,hintsOpen=false;
+let calY=now.getFullYear(),calM=now.getMonth();
+let favs=[];try{favs=JSON.parse(localStorage.getItem('gp_web')||'[]');}catch(e){}
+let audioEl=null,audioState={playing:false,generating:false};
+
+function hR(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+function rH(r,g,b){return'#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');}
+function hsvRgb(h,s,v){const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r=0,g=0,b=0;if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}else if(h<180){g=c;b=x;}else if(h<240){g=x;b=c;}else if(h<300){r=x;b=c;}else{r=c;b=x;}return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];}
+function hexHsv(h){let[r,g,b]=hR(h);r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let hh=0,s=mx===0?0:d/mx,v=mx;if(d){if(mx===r)hh=((g-b)/d+6)%6;else if(mx===g)hh=(b-r)/d+2;else hh=(r-g)/d+4;hh*=60;}return[hh,s,v];}
+function dk(h,f){const[r,g,b]=hR(h);return rH(r*f,g*f,b*f);}
+function lt(h,f){const[r,g,b]=hR(h);return rH(r+(255-r)*f,g+(255-g)*f,b+(255-b)*f);}
+function toDK(d){return`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;}
+function rndP(){const c=COLORS[cur>=0?cur:0];return c.prompts[Math.floor(Math.random()*c.prompts.length)];}
+
+function setRingColors(hex){
+  ['r1','r2','r3'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.style.border=`${[1.5,1,0.5][i]}px solid ${[hex+'70',hex+'48',hex+'28'][i]}`;
+  });
+}
+
+function applyColor(instant){
+  const hex=cur>=0?COLORS[cur].hex:pHex;
+  const glow=dk(hex,0.62);
+  const dur=instant?'0s':'1.8s';
+  const pod=document.getElementById('pod-glow');
+  pod.style.transition=`background ${dur} ease,box-shadow ${dur} ease`;
+  const darkBg=cur>=0?COLORS[cur].bg:`radial-gradient(ellipse at 45% 25%, ${dk(hex,0.18)}, ${dk(hex,0.08)})`;
+  const lightBg=`radial-gradient(ellipse at 45% 30%, ${lt(hex,0.72)}, ${lt(hex,0.88)})`;
+  const wash=document.getElementById('page-wash');
+  wash.style.transition=`background ${dur} ease`;
+  if(isDark){
+    pod.style.background=`radial-gradient(circle at 36% 36%, #ffffffcc, ${hex} 42%, ${glow})`;
+    pod.style.boxShadow=`0 0 50px 16px ${hex}55,0 0 100px 30px ${glow}30`;
+    wash.style.background=darkBg; document.body.style.background='#0e0c10';
+  } else {
+    pod.style.background=`radial-gradient(circle at 36% 36%, #ffffffee, ${lt(hex,0.25)} 42%, ${hex})`;
+    pod.style.boxShadow=`0 0 38px 10px ${hex}40,0 0 75px 24px ${hex}22`;
+    wash.style.background=lightBg; document.body.style.background='#f5f0ec';
+  }
+  setRingColors(hex);
+  const nm=cur>=0?COLORS[cur].name:(document.getElementById('pk-name').value||'Custom');
+  document.getElementById('color-name').textContent=nm;
+  document.getElementById('color-story').textContent=cur>=0?COLORS[cur].story:'Your own hue, your own moment.';
+  document.getElementById('audio-title').textContent=`Color story — ${nm}`;
+  if(mode==='reflect') document.getElementById('prompt-text').textContent=rndP();
+  updateSwatches();
+}
+
+function buildDayBanner(){
+  const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('day-dot').style.background=COLORS[fi].hex;
+  document.getElementById('day-date').textContent=`${DAYS[now.getDay()]}, ${MONS[now.getMonth()]} ${now.getDate()}`;
+  document.getElementById('day-reason').textContent=fd?fd.r:`Today's color — ${COLORS[fi].name}.`;
+}
+
+function buildSwatches(){
+  const row=document.getElementById('swatch-row');
+  COLORS.forEach((c,i)=>{
+    const s=document.createElement('div');s.className='swatch'+(i===fi?' selected':'');s.style.background=c.hex;
+    const tip=document.createElement('span');tip.className='sw-tip';tip.textContent=c.name;s.appendChild(tip);
+    s.onclick=()=>{cur=i;applyColor();stopAudio();};row.appendChild(s);
+  });
+}
+function updateSwatches(){document.querySelectorAll('.swatch').forEach((s,i)=>s.classList.toggle('selected',i===cur));}
+function nextColor(){cur=(cur+1)%COLORS.length;applyColor();stopAudio();}
+function podClick(){if(mode!=='breathe')setMode('breathe',document.getElementById('btn-breathe'));else nextColor();}
+function toggleMode(){isDark=!isDark;document.getElementById('shell').className=isDark?'dark':'light';document.body.className=isDark?'dark':'light';document.getElementById('mode-btn').textContent=isDark?'Light mode':'Dark mode';applyColor(true);}
+function toggleHints(){hintsOpen=!hintsOpen;document.getElementById('hints-panel').classList.toggle('open',hintsOpen);const btn=document.getElementById('hints-btn');btn.classList.toggle('on',hintsOpen);btn.textContent=hintsOpen?'✕ Close hints':'? Hints';}
+
+function showTab(tab,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  ['gallery','picker','journal','calendar'].forEach(t=>document.getElementById('pane-'+t).classList.toggle('active',t===tab));
+  if(tab==='picker'&&!pSaved)setTimeout(()=>{drawSpec();drawHue();},60);
+  if(tab==='journal')renderFavs();
+  if(tab==='calendar')renderCal();
+}
+
+function setMode(m,btn){
+  mode=m;document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+  clearTimeout(mInt);mInt=null;document.getElementById('pod-glow').style.transform='scale(1)';document.getElementById('breathing-hint').textContent='';
+  if(m==='reflect'){document.getElementById('prompt-text').textContent=rndP();}
+  else if(m==='breathe'){
+    const steps=['Breathe in…','Hold…','Breathe out…','Rest…'],durs=[4000,2000,6000,2000],scales=[1.08,1.1,0.96,1];
+    let step=0;document.getElementById('breathing-hint').textContent='Follow the pod';document.getElementById('prompt-text').textContent=steps[0];
+    const pod=document.getElementById('pod-glow');pod.style.transition='transform 4s ease,background 2s ease,box-shadow 2s ease';pod.style.transform=`scale(${scales[0]})`;
+    function nxt(){step=(step+1)%4;document.getElementById('prompt-text').textContent=steps[step];pod.style.transition=`transform ${durs[step]/1000}s ease,background 2s ease,box-shadow 2s ease`;pod.style.transform=`scale(${scales[step]})`;mInt=setTimeout(nxt,durs[step]);}
+    mInt=setTimeout(nxt,durs[0]);
+  } else {let ei=0;function cyc(){document.getElementById('prompt-text').textContent=EXPLORE[ei%EXPLORE.length];ei++;mInt=setTimeout(cyc,4000);}cyc();}
+}
+
+// ── Audio: ElevenLabs Aria via Cloudflare Worker ──────────────────────────
+function setAudioSub(t){document.getElementById('audio-sub').textContent=t;}
+function showGenerating(show){
+  document.getElementById('audio-generating').classList.toggle('show',show);
+  document.getElementById('audio-sub').style.display=show?'none':'';
+  document.getElementById('audio-progress-wrap').style.display=show?'none':'';
+}
+
+function toggleAudio(){
+  if(audioState.generating)return;
+  if(audioState.playing){stopAudio();return;}
+  startAudio();
+}
+
+async function startAudio(){
+  if(audioState.generating)return;
+  stopAudio();
+
+  // Check worker is configured
+  if(!WORKER_URL||WORKER_URL==='PASTE_YOUR_WORKER_URL_HERE'){
+    setAudioSub('Add your Worker URL to enable voice — see Hints for setup.');
+    return;
+  }
+
+  audioState.generating=true;
+  showGenerating(true);
+  document.getElementById('gen-label').textContent='Warming up Aria\'s voice…';
+
+  try{
+    // Get the pre-written script for the active color
+    const script=cur>=0?COLORS[cur].script:`Welcome. You've chosen your own color today. Let it fill the space around you. Breathe in slowly. Hold. And release. Stay here as long as you need. The light is yours.`;
+
+    // Call Cloudflare Worker proxy → ElevenLabs
+    const resp=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        voiceId: ELEVENLABS_VOICE,
+        apiKey:  ELEVENLABS_KEY,
+        text:    script
+      })
+    });
+
+    if(!resp.ok) throw new Error(`Worker responded ${resp.status}`);
+
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+
+    audioState.generating=false;
+    showGenerating(false);
+
+    if(audioEl){audioEl.pause();URL.revokeObjectURL(audioEl.src||'');}
+    audioEl=new Audio(url);
+
+    audioEl.onplay=()=>{
+      audioState.playing=true;
+      document.getElementById('icon-play').style.display='none';
+      document.getElementById('icon-pause').style.display='block';
+      setAudioSub('Now playing…');
+    };
+    audioEl.ontimeupdate=()=>{
+      if(!audioEl.duration)return;
+      const pct=Math.round(audioEl.currentTime/audioEl.duration*100);
+      document.getElementById('audio-progress').style.width=pct+'%';
+      const rem=Math.max(0,Math.round(audioEl.duration-audioEl.currentTime));
+      document.getElementById('audio-status').textContent=rem>0?`${rem}s remaining`:'';
+    };
+    audioEl.onended=()=>stopAudio(true);
+    audioEl.onerror=()=>{stopAudio();setAudioSub('Playback error — try again.');};
+    audioEl.play();
+
+  }catch(err){
+    audioState.generating=false;
+    showGenerating(false);
+    console.error('Audio error:',err);
+    setAudioSub('Could not load audio — check your Worker URL and try again.');
+  }
+}
+
+function stopAudio(fin){
+  if(audioEl)audioEl.pause();
+  audioState.playing=false;audioState.generating=false;
+  showGenerating(false);
+  document.getElementById('icon-play').style.display='block';
+  document.getElementById('icon-pause').style.display='none';
+  setAudioSub(fin?'Complete — tap to replay':'Tap play for your color meditation');
+  if(!fin){document.getElementById('audio-progress').style.width='0%';document.getElementById('audio-status').textContent='';}
+}
+
+function seekAudio(e){
+  if(!audioEl||!audioEl.duration)return;
+  const r=e.currentTarget.getBoundingClientRect();
+  audioEl.currentTime=(e.clientX-r.left)/r.width*audioEl.duration;
+}
+
+// ── Eyedropper ────────────────────────────────────────────────────────────
+let sCtx,hCtx;
+function drawSpec(){const c=document.getElementById('spec-canvas');if(!c)return;const W=c.offsetWidth,H=130;c.width=W*devicePixelRatio;c.height=H*devicePixelRatio;sCtx=c.getContext('2d');sCtx.scale(devicePixelRatio,devicePixelRatio);const[r,g,b]=hsvRgb(pHue,1,1),hc=`rgb(${r},${g},${b})`;const gh=sCtx.createLinearGradient(0,0,W,0);gh.addColorStop(0,'#fff');gh.addColorStop(1,hc);sCtx.fillStyle=gh;sCtx.fillRect(0,0,W,H);const gv=sCtx.createLinearGradient(0,0,0,H);gv.addColorStop(0,'rgba(0,0,0,0)');gv.addColorStop(1,'#000');sCtx.fillStyle=gv;sCtx.fillRect(0,0,W,H);document.getElementById('spec-cursor').style.left=(sX*100)+'%';document.getElementById('spec-cursor').style.top=(sY*100)+'%';}
+function drawHue(){const c=document.getElementById('hue-canvas');if(!c)return;const W=c.offsetWidth;c.width=W*devicePixelRatio;c.height=16*devicePixelRatio;hCtx=c.getContext('2d');hCtx.scale(devicePixelRatio,devicePixelRatio);const g=hCtx.createLinearGradient(0,0,W,0);for(let i=0;i<=360;i+=30){const[r,rb,rb2]=hsvRgb(i,1,1);g.addColorStop(i/360,`rgb(${r},${rb},${rb2})`);}hCtx.fillStyle=g;hCtx.fillRect(0,0,W,16);document.getElementById('hue-cursor').style.left=(pHue/360*100)+'%';}
+function sampSpec(x,y,w,h){sX=Math.max(0,Math.min(1,x/w));sY=Math.max(0,Math.min(1,y/h));const[r,g,b]=hsvRgb(pHue,sX,1-sY);pHex=rH(r,g,b);document.getElementById('picked-swatch').style.background=pHex;document.getElementById('pk-hex').value=pHex;document.getElementById('spec-cursor').style.left=(sX*100)+'%';document.getElementById('spec-cursor').style.top=(sY*100)+'%';}
+function sampHue(x,w){pHue=Math.max(0,Math.min(360,(x/w)*360));drawHue();drawSpec();const[r,g,b]=hsvRgb(pHue,sX,1-sY);pHex=rH(r,g,b);document.getElementById('picked-swatch').style.background=pHex;document.getElementById('pk-hex').value=pHex;}
+function bindC(el,fn){el.addEventListener('mousedown',e=>{const r=el.getBoundingClientRect();fn(e.clientX-r.left,e.clientY-r.top,r.width,r.height);});el.addEventListener('mousemove',e=>{if(e.buttons!==1)return;const r=el.getBoundingClientRect();fn(e.clientX-r.left,e.clientY-r.top,r.width,r.height);});el.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0],r=el.getBoundingClientRect();fn(t.clientX-r.left,t.clientY-r.top,r.width,r.height);},{passive:false});el.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0],r=el.getBoundingClientRect();fn(t.clientX-r.left,t.clientY-r.top,r.width,r.height);},{passive:false});}
+bindC(document.getElementById('spec-wrap'),(x,y,w,h)=>sampSpec(x,y,w,h));
+bindC(document.getElementById('hue-wrap'),(x,y,w)=>sampHue(x,w));
+document.getElementById('pk-hex').addEventListener('input',e=>{if(/^#[0-9a-fA-F]{6}$/.test(e.target.value)){pHex=e.target.value;document.getElementById('picked-swatch').style.background=pHex;const[h]=hexHsv(pHex);pHue=h;drawHue();drawSpec();}});
+function applyPick(){const nm=document.getElementById('pk-name').value.trim()||'Custom';cur=-1;document.getElementById('color-name').textContent=nm;document.getElementById('color-story').textContent='Your own hue, your own moment.';document.getElementById('audio-title').textContent=`Color story — ${nm}`;applyColor(false);}
+function savePick(){const nm=document.getElementById('pk-name').value.trim()||pHex.toUpperCase();favs.unshift({id:Date.now(),hex:pHex,name:nm,note:'',date:new Date().toLocaleDateString(),dk:toDK(now)});try{localStorage.setItem('gp_web',JSON.stringify(favs));}catch(e){}applyPick();pSaved=true;document.getElementById('picker-area').style.display='none';document.getElementById('picker-saved').style.display='flex';document.getElementById('pks-dot').style.cssText=`background:${pHex};width:52px;height:52px;border-radius:50%;border:2px solid rgba(128,128,128,0.2);`;document.getElementById('pks-name').textContent=nm;document.getElementById('pks-sub').textContent='Saved. Add a note in the Journal tab.';}
+function resetPick(){pSaved=false;document.getElementById('picker-area').style.display='block';document.getElementById('picker-saved').style.display='none';document.getElementById('pk-name').value='';setTimeout(()=>{drawSpec();drawHue();},60);}
+
+// ── Journal ───────────────────────────────────────────────────────────────
+function saveFav(){const note=document.getElementById('journal-input').value.trim(),hex=cur>=0?COLORS[cur].hex:pHex,name=cur>=0?COLORS[cur].name:document.getElementById('color-name').textContent;favs.unshift({id:Date.now(),hex,name,note,date:new Date().toLocaleDateString(),dk:toDK(now)});try{localStorage.setItem('gp_web',JSON.stringify(favs));}catch(e){}document.getElementById('journal-input').value='';renderFavs();}
+function delFav(id){favs=favs.filter(f=>f.id!==id);try{localStorage.setItem('gp_web',JSON.stringify(favs));}catch(e){}renderFavs();}
+function applyFav(hex,name){const idx=COLORS.findIndex(c=>c.hex===hex);if(idx>=0){cur=idx;}else{cur=-1;pHex=hex;document.getElementById('color-name').textContent=name;document.getElementById('color-story').textContent='Your own hue, your own moment.';}applyColor();showTab('gallery',document.querySelector('.tab-btn'));}
+function renderFavs(){const l=document.getElementById('fav-list');if(!favs.length){l.innerHTML='<div id="empty-fav">No saved colors yet.<br>Let a color find you — then keep it.</div>';return;}l.innerHTML=favs.map(f=>`<div class="fav-item"><div class="fav-dot" style="background:${f.hex}" onclick="applyFav('${f.hex}','${f.name.replace(/'/g,"\\'")}')"></div><div class="fav-body"><div class="fav-name">${f.name} <span style="font-size:9px;opacity:0.3">${f.date}</span></div><div class="fav-note">${f.note||'<span style="opacity:0.35">No note</span>'}</div></div><button class="fav-del" onclick="delFav(${f.id})">×</button></div>`).join('');}
+
+// ── Calendar ──────────────────────────────────────────────────────────────
+function renderCal(){const MONS=['January','February','March','April','May','June','July','August','September','October','November','December'];document.getElementById('cal-month-label').textContent=`${MONS[calM]} ${calY}`;const g=document.getElementById('cal-grid');g.innerHTML='';['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;g.appendChild(el);});const first=new Date(calY,calM,1).getDay(),days=new Date(calY,calM+1,0).getDate();for(let i=0;i<first;i++)g.appendChild(Object.assign(document.createElement('div'),{className:'cal-day'}));const em={};favs.forEach(f=>{if(f.dk)em[f.dk]=f;});for(let d=1;d<=days;d++){const k=`${calY}-${calM+1}-${d}`,e=em[k],iT=d===now.getDate()&&calM===now.getMonth()&&calY===now.getFullYear();const el=document.createElement('div');el.className='cal-day'+(iT?' today':'')+(e?' has-entry':'');el.textContent=d;if(e){el.style.background=e.hex+'28';const dot=document.createElement('div');dot.className='cal-dot';dot.style.background=e.hex;el.appendChild(dot);el.onclick=()=>{const S=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const dd=document.getElementById('cal-detail-dot');dd.style.cssText=`background:${e.hex};width:24px;height:24px;border-radius:50%;flex-shrink:0;`;document.getElementById('cal-detail-name').textContent=e.name;document.getElementById('cal-detail-date').textContent=`${S[calM]} ${d}, ${calY}`;document.getElementById('cal-detail-note').textContent=e.note||'No note recorded.';document.getElementById('cal-detail').classList.add('show');};}g.appendChild(el);}document.getElementById('cal-detail').classList.remove('show');}
+function calNav(dir){calM+=dir;if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal();}
+
+// ── Onboarding ────────────────────────────────────────────────────────────
+const STEPS=[{icon:'◎',title:"Today's color",body:'Each day a color is chosen for a reason — tied to the season or a story.',target:'#day-banner'},{icon:'◈',title:'The pod',body:'Tap to breathe with it. Tap again during breathing to cycle to the next color.',target:'#pod-glow'},{icon:'⬡',title:'Eyedropper',body:'Mix any color from the spectrum, name it, and cast it onto the pod.',target:'.tab-btn:nth-child(2)'},{icon:'◇',title:'Calendar',body:'Every journaled color appears on your calendar — a mood map over time.',target:'.tab-btn:nth-child(4)'},{icon:'▷',title:'Color story',body:'Aria reads you a warm, personal meditation written for your active color.',target:'#audio-card'}];
+let obStep=-1,obCard=null,obDot=null;
+function getRP(sel){const el=document.querySelector(sel);if(!el)return null;const er=el.getBoundingClientRect();return{x:er.left+er.width/2,y:er.top+er.height/2};}
+function clearOb(){if(obCard){obCard.remove();obCard=null;}if(obDot){obDot.remove();obDot=null;}}
+function showStep(i){
+  clearOb();const ov=document.getElementById('onboard-overlay');
+  if(i>=STEPS.length){dismissOnboard();return;}
+  obStep=i;document.querySelectorAll('.step-dot').forEach((d,idx)=>d.classList.toggle('on',idx===i));
+  const step=STEPS[i],pos=getRP(step.target);
+  if(pos){const dot=document.createElement('div');dot.className='onboard-dot';dot.style.left=pos.x+'px';dot.style.top=pos.y+'px';ov.appendChild(dot);obDot=dot;requestAnimationFrame(()=>requestAnimationFrame(()=>dot.classList.add('visible')));}
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const cx=pos?Math.min(Math.max(pos.x-105,12),vw-222):vw/2-105;
+  const cy=pos?(pos.y>vh/2?pos.y-210:pos.y+44):vh/2-80;
+  const card=document.createElement('div');card.className='onboard-card';card.style.left=cx+'px';card.style.top=cy+'px';
+  card.innerHTML=`<div class="onboard-icon">${step.icon}</div><div class="onboard-title">${step.title}</div><div class="onboard-body">${step.body}</div><button id="onboard-next" onclick="showStep(${i+1})">${i<STEPS.length-1?'Next →':'Done'}</button>`;
+  ov.appendChild(card);obCard=card;requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('visible')));
+}
+function dismissOnboard(){clearOb();const ov=document.getElementById('onboard-overlay');ov.classList.remove('active');document.getElementById('onboard-scrim').style.opacity='0';setTimeout(()=>{ov.innerHTML='';},500);try{localStorage.setItem('gp_web_v','1');}catch(e){};}
+function startOnboard(){const ov=document.getElementById('onboard-overlay');ov.classList.add('active');const de=document.getElementById('onboard-step-dots');if(de)de.innerHTML=STEPS.map((_,i)=>`<div class="step-dot${i===0?' on':''}"></div>`).join('');requestAnimationFrame(()=>requestAnimationFrame(()=>{document.getElementById('onboard-scrim').style.opacity='1';}));setTimeout(()=>showStep(0),500);}
+
+function seedDemo(){if(favs.length>0)return;const demos=[{hex:'#FFBF00',name:'Amber Skies',note:'The morning felt worth keeping.'},{hex:'#7ED9C4',name:'Sea Glass Green',note:'Something sharp finally softened.'},{hex:'#DA70D6',name:'Electric Orchid',note:''},{hex:'#4A90E2',name:'Horizon Blue',note:'Still reaching for something I cannot name.'},{hex:'#556B2F',name:'Deep Moss',note:'Slow and grounded. Needed that.'},{hex:'#FF6F3C',name:'Soft Ember',note:'Remembered why I started.'},{hex:'#C0C0C0',name:'Lunar Silver',note:'Reflecting more than creating this week.'}];[0,-2,-4,-7,-10,-14,-18].forEach((off,i)=>{const d=new Date(now);d.setDate(now.getDate()+off);favs.push({id:Date.now()+i,...demos[i],date:d.toLocaleDateString(),dk:toDK(d)});});try{localStorage.setItem('gp_web',JSON.stringify(favs));}catch(e){}}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+seedDemo();buildSwatches();buildDayBanner();applyColor(true);
+document.getElementById('picked-swatch').style.background=pHex;
+document.getElementById('pk-hex').value=pHex;
+document.getElementById('prompt-text').textContent=rndP();
+renderFavs();
+let fv=false;try{fv=!localStorage.getItem('gp_web_v');}catch(e){fv=true;}
+if(fv)setTimeout(startOnboard,900);
+</script>
+</body>
+</html>
